@@ -6,29 +6,6 @@ from twisted.internet.protocol import Protocol
 from twisted.internet import reactor
 from twisted.web.http_headers import Headers
 
-#==== workaround for TLSv1_2 with DreamOS =======
-from OpenSSL import SSL
-from twisted.internet.ssl import ClientContextFactory
-try:
-	# available since twisted 14.0
-	from twisted.internet._sslverify import ClientTLSOptions
-except ImportError:
-	ClientTLSOptions = None
-#================================================
-
-try:
-	from enigma import eMediaDatabase  # noqa F401
-
-	import ssl
-	try:
-		_create_unverified_https_context = ssl._create_unverified_context
-	except AttributeError:
-		pass
-	else:
-		ssl._create_default_https_context = _create_unverified_https_context
-except Exception:
-	pass
-
 
 class TelekomSportFileSaver(Protocol):
 
@@ -52,27 +29,8 @@ class TelekomSportFileSaver(Protocol):
 
 class TelekomSportFileDownloader:
 
-	def __init__(self, isDreamOS):
-		if isDreamOS is False:
-			self.agent = BrowserLikeRedirectAgent(Agent(reactor))
-		else:
-			class WebClientContextFactory(ClientContextFactory):
-				"A SSL context factory which is more permissive against SSL bugs."
-
-				def __init__(self):
-					self.method = SSL.SSLv23_METHOD
-
-				def getContext(self, hostname=None, port=None):
-					ctx = ClientContextFactory.getContext(self)
-					# Enable all workarounds to SSL bugs as documented by
-					# http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
-					ctx.set_options(SSL.OP_ALL)
-					if hostname and ClientTLSOptions is not None:  # workaround for TLS SNI
-						ClientTLSOptions(hostname, ctx)
-					return ctx
-
-			contextFactory = WebClientContextFactory()
-			self.agent = BrowserLikeRedirectAgent(Agent(reactor, contextFactory))
+	def __init__(self):
+		self.agent = BrowserLikeRedirectAgent(Agent(reactor))
 
 	def start(self, url, filename, callback, errorCallback):
 		self.filename = filename

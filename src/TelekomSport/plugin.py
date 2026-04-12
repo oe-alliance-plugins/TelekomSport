@@ -46,30 +46,6 @@ if getDesktop(0).size().width() <= 1280:
 else:
 	loadSkin(resolveFilename(SCOPE_PLUGINS) + "Extensions/TelekomSport/skin_fhd.xml")
 
-try:
-	from enigma import eMediaDatabase  # noqa F401
-	telekomsport_isDreamOS = True
-
-	import ssl
-	try:
-		_create_unverified_https_context = ssl._create_unverified_context
-	except AttributeError:
-		pass
-	else:
-		ssl._create_default_https_context = _create_unverified_https_context
-
-except Exception:
-	telekomsport_isDreamOS = False
-
-#==== workaround for TLSv1_2 with DreamOS =======
-from OpenSSL import SSL
-from twisted.internet.ssl import ClientContextFactory
-try:
-	# available since twisted 14.0
-	from twisted.internet._sslverify import ClientTLSOptions
-except ImportError:
-	ClientTLSOptions = None
-#================================================
 
 config.plugins.telekomsport = ConfigSubsection()
 config.plugins.telekomsport.username1 = ConfigText(default='', fixed_size=False)
@@ -85,7 +61,7 @@ config.plugins.telekomsport.hide_unplayable = ConfigYesNo(default=False)
 config.plugins.telekomsport.default_section = ConfigText(default='', fixed_size=False)
 config.plugins.telekomsport.default_section_chooser = NoSave(ConfigSelection([], default=None))
 # Some images like DreamOS need streams with fix quality
-config.plugins.telekomsport.fix_stream_quality = ConfigYesNo(default=telekomsport_isDreamOS)
+config.plugins.telekomsport.fix_stream_quality = ConfigYesNo(default=False)
 config.plugins.telekomsport.stream_quality = ConfigSelection(default="2", choices=[("0", _("sehr gering")), ("1", _("gering")), ("2", _("mittel")), ("3", _("hoch")), ("4", _("sehr hoch"))])
 config.plugins.telekomsport.conf_alarm_duration = ConfigSelection(default="8000", choices=[("4000", "4 Sekunden"), ("6000", "6 Sekunden"), ("8000", "8 Sekunden"), ("10000", "10 Sekunden"), ("12000", "12 Sekunden")])
 
@@ -158,26 +134,7 @@ def handleTelekomSportDownloadError(screen, statusField, err):
 
 
 def downloadTelekomSportJson(url, callback, errorCallback):
-	if not telekomsport_isDreamOS:
-		agent = Agent(reactor)
-	else:
-		class WebClientContextFactory(ClientContextFactory):
-			"A SSL context factory which is more permissive against SSL bugs."
-
-			def __init__(self):
-				self.method = SSL.SSLv23_METHOD
-
-			def getContext(self, hostname=None, port=None):
-				ctx = ClientContextFactory.getContext(self)
-				# Enable all workarounds to SSL bugs as documented by
-				# http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
-				ctx.set_options(SSL.OP_ALL)
-				if hostname and ClientTLSOptions is not None:  # workaround for TLS SNI
-					ClientTLSOptions(hostname, ctx)
-				return ctx
-
-		contextFactory = WebClientContextFactory()
-		agent = Agent(reactor, contextFactory)
+	agent = Agent(reactor)
 	d = agent.request(b'GET', url, Headers({'user-agent': ['Twisted']}))
 	d.addCallback(boundFunction(handleTelekomSportWebsiteResponse, callback))
 	d.addErrback(errorCallback)
@@ -217,8 +174,7 @@ class TelekomSportConfigScreen(ConfigListScreen, Screen):
 
 	ts_font_str = ""
 	if getDesktop(0).size().width() <= 1280:
-		if not telekomsport_isDreamOS:
-			ts_font_str = 'font="Regular;20"'
+		ts_font_str = 'font="Regular;20"'
 		skin = '''<screen position="center,center" size="680,440" flags="wfNoBorder">
 					<ePixmap position="center,10" size="640,60" scale="1" pixmap="''' + eEnv.resolve('${libdir}/enigma2/python/Plugins/Extensions/TelekomSport/TelekomSport-Logo.png') + '''" alphatest="blend" zPosition="1"/>
 					<widget name="config" position="10,85" size="650,330" ''' + ts_font_str + ''' scrollbarMode="showOnDemand" />
@@ -228,8 +184,7 @@ class TelekomSportConfigScreen(ConfigListScreen, Screen):
 					<widget name="HelpWindow" position="0,0" size="1,1" zPosition="1" transparent="1" alphatest="on"/>
 				</screen>'''
 	else:
-		if not telekomsport_isDreamOS:
-			ts_font_str = 'font="Regular;32"'
+		ts_font_str = 'font="Regular;32"'
 		skin = '''<screen position="center,center" size="1020,700" flags="wfNoBorder">
 					<ePixmap position="center,15" size="980,90" scale="1" pixmap="''' + eEnv.resolve('${libdir}/enigma2/python/Plugins/Extensions/TelekomSport/TelekomSport-Logo.png') + '''" alphatest="blend" zPosition="1"/>
 					<widget name="config" position="15,120" size="990,500" ''' + ts_font_str + ''' itemHeight="42" scrollbarMode="showOnDemand" />
@@ -340,10 +295,7 @@ class TelekomSportConferenceAlarm(Screen):
 		self['logo_off'].hide()
 
 		self.close_timer = eTimer()
-		if telekomsport_isDreamOS:
-			self.close_timer_conn = self.close_timer.timeout.connect(self.hide_screen)
-		else:
-			self.close_timer.callback.append(self.hide_screen)
+		self.close_timer.callback.append(self.hide_screen)
 
 		self.onShow.append(self.startTimer)
 		self.onHide.append(self.stopTimer)
@@ -397,10 +349,7 @@ class TelekomSportMoviePlayer(Screen, InfoBarMenu, InfoBarBase, InfoBarSeek, Inf
 		self.video_id = video_id
 
 		self.conference_alarm_timer = eTimer()
-		if telekomsport_isDreamOS:
-			self.conference_alarm_timer_conn = self.conference_alarm_timer.timeout.connect(self.checkAlarmHistory)
-		else:
-			self.conference_alarm_timer.callback.append(self.checkAlarmHistory)
+		self.conference_alarm_timer.callback.append(self.checkAlarmHistory)
 		self.conference_complete_alarm_list = []
 
 		self.conference_alarm_dialog = self.session.instantiateDialog(TelekomSportConferenceAlarm)
@@ -1520,10 +1469,7 @@ class TelekomSportMainScreen(Screen):
 		downloadTelekomSportJson(generateUrl(self.main_page), boundFunction(loadTelekomSportJsonData, 'Main', self['status'], self.buildList), boundFunction(handleTelekomSportDownloadError, 'Main', self['status']))
 		self.onLayoutFinish.append(self.checkForUpdate)
 		self.migrate_timer = eTimer()
-		if telekomsport_isDreamOS:
-			self.migrate_timer_conn = self.migrate_timer.timeout.connect(self.checkNewPasswordFileIsUsed)
-		else:
-			self.migrate_timer.callback.append(self.checkNewPasswordFileIsUsed)
+		self.migrate_timer.callback.append(self.checkNewPasswordFileIsUsed)
 		self.migrate_timer.start(200, True)
 
 	def buildList(self, jsonData):
@@ -1602,13 +1548,7 @@ class TelekomSportMainScreen(Screen):
 				if self.version < rel['tag_name']:
 					self.updateText = rel['body']
 					for asset in rel['assets']:
-						if telekomsport_isDreamOS and asset['name'].endswith('.deb'):
-							self.updateUrl = asset['browser_download_url'].encode('utf8')
-							self.filename = '/tmp/enigma2-plugin-extensions-telekomsport.deb'
-							self['buttongreen'].show()
-							self.update_exist = True
-							break
-						elif (not telekomsport_isDreamOS) and asset['name'].endswith('.ipk') and asset['name'].startswith('py3'):
+						if asset['name'].endswith('.ipk') and asset['name'].startswith('py3'):
 							self.updateUrl = asset['browser_download_url'].encode('utf8')
 							self.filename = '/tmp/enigma2-plugin-extensions-telekomsport.ipk'
 							self['buttongreen'].show()
@@ -1626,17 +1566,13 @@ class TelekomSportMainScreen(Screen):
 
 	def updateConfirmed(self, answer):
 		if answer:
-			downloader = TelekomSportFileDownloader(telekomsport_isDreamOS)
+			downloader = TelekomSportFileDownloader()
 			downloader.start(self.updateUrl, self.filename, self.downloadFinished, self.updateFailed)
 
 	def downloadFinished(self):
 		self.container = eConsoleAppContainer()
-		if telekomsport_isDreamOS:
-			self.container.appClosed_conn = self.container.appClosed.connect(self.updateFinished)
-			self.container.execute('dpkg -i ' + self.filename)
-		else:
-			self.container.appClosed.append(self.updateFinished)
-			self.container.execute('opkg update; opkg install ' + self.filename)
+		self.container.appClosed.append(self.updateFinished)
+		self.container.execute('opkg update; opkg install ' + self.filename)
 
 	def updateFailed(self, reason):
 		self.updateFinished(1)
