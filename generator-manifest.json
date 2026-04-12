@@ -1,0 +1,24 @@
+{
+  "depends": "",
+  "description": "Telekom Sport Plugin",
+  "legacy_setup": {
+    "description": "Telekom Sport Plugin",
+    "has_setup_translate": false,
+    "name": "enigma2-plugin-extensions-telekomsport",
+    "package_data": [],
+    "package_dir_value": "",
+    "packages": [],
+    "pkg": "Extensions.TelekomSport",
+    "version": "1.0"
+  },
+  "module_dir_name": "TelekomSport",
+  "package_name": "enigma2-plugin-extensions-telekomsport",
+  "plugin_group": "extensions",
+  "source_repo_branch": "python3",
+  "source_repo_name": "e2openplugin-TelekomSport",
+  "source_repo_url": "https://github.com/E2OpenPlugins/e2openplugin-TelekomSport.git",
+  "target_repo_branch": "main",
+  "target_repo_name": "TelekomSport",
+  "target_repo_url": "git@github.com:oe-alliance-plugins/TelekomSport.git",
+  "version": "1.0"
+}

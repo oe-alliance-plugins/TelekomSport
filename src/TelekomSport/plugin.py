@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import print_function
-
 from skin import loadSkin
 from Plugins.Plugin import PluginDescriptor
 from Screens.Screen import Screen
@@ -41,6 +39,7 @@ from datetime import datetime, timedelta
 from twisted.web.client import Agent, readBody
 from twisted.internet import reactor
 from twisted.web.http_headers import Headers
+from . import _
 
 
 if getDesktop(0).size().width() <= 1280:
