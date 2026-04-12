@@ -73,37 +73,41 @@ except ImportError:
 #================================================
 
 config.plugins.telekomsport = ConfigSubsection()
-config.plugins.telekomsport.username1 = ConfigText(default = '', fixed_size = False)
-config.plugins.telekomsport.password1 = ConfigPassword(default = '', fixed_size = False)
-config.plugins.telekomsport.token1 = ConfigText(default = '')
-config.plugins.telekomsport.token1_expiration_time = ConfigInteger(default = 0)
-config.plugins.telekomsport.username2 = ConfigText(default = '', fixed_size = False)
-config.plugins.telekomsport.password2 = ConfigPassword(default = '', fixed_size = False)
-config.plugins.telekomsport.token2 = ConfigText(default = '')
-config.plugins.telekomsport.token2_expiration_time = ConfigInteger(default = 0)
+config.plugins.telekomsport.username1 = ConfigText(default='', fixed_size=False)
+config.plugins.telekomsport.password1 = ConfigPassword(default='', fixed_size=False)
+config.plugins.telekomsport.token1 = ConfigText(default='')
+config.plugins.telekomsport.token1_expiration_time = ConfigInteger(default=0)
+config.plugins.telekomsport.username2 = ConfigText(default='', fixed_size=False)
+config.plugins.telekomsport.password2 = ConfigPassword(default='', fixed_size=False)
+config.plugins.telekomsport.token2 = ConfigText(default='')
+config.plugins.telekomsport.token2_expiration_time = ConfigInteger(default=0)
 config.plugins.telekomsport.hide_unplayable = ConfigYesNo(default=False)
 # Use 2 config variables as workaround as empty ConfigSelection is not initialized with the stored value after e2 restart
-config.plugins.telekomsport.default_section = ConfigText(default = '', fixed_size = False)
-config.plugins.telekomsport.default_section_chooser = NoSave(ConfigSelection([], default = None))
+config.plugins.telekomsport.default_section = ConfigText(default='', fixed_size=False)
+config.plugins.telekomsport.default_section_chooser = NoSave(ConfigSelection([], default=None))
 # Some images like DreamOS need streams with fix quality
-config.plugins.telekomsport.fix_stream_quality = ConfigYesNo(default = telekomsport_isDreamOS)
-config.plugins.telekomsport.stream_quality = ConfigSelection(default = "2", choices = [("0", _("sehr gering")), ("1", _("gering")), ("2", _("mittel")), ("3", _("hoch")), ("4", _("sehr hoch"))])
-config.plugins.telekomsport.conf_alarm_duration = ConfigSelection(default = "8000", choices = [("4000", "4 Sekunden"), ("6000", "6 Sekunden"), ("8000", "8 Sekunden"), ("10000", "10 Sekunden"), ("12000", "12 Sekunden")])
+config.plugins.telekomsport.fix_stream_quality = ConfigYesNo(default=telekomsport_isDreamOS)
+config.plugins.telekomsport.stream_quality = ConfigSelection(default="2", choices=[("0", _("sehr gering")), ("1", _("gering")), ("2", _("mittel")), ("3", _("hoch")), ("4", _("sehr hoch"))])
+config.plugins.telekomsport.conf_alarm_duration = ConfigSelection(default="8000", choices=[("4000", "4 Sekunden"), ("6000", "6 Sekunden"), ("8000", "8 Sekunden"), ("10000", "10 Sekunden"), ("12000", "12 Sekunden")])
 
 
 def encode(x):
 	return base64.encodebytes(''.join(chr(c ^ ord(k)) for c, k in zip(x, cycle('password protection'))).encode('utf-8')).strip()
 
+
 def decode(x):
 	return ''.join(chr(c ^ ord(k)) for c, k in zip(base64.decodebytes(x), cycle('password protection')))
+
 
 def generateToken(url):
 	api_salt = '55!#r%Rn3%xn?U?PX*k'
 	t = int(((datetime.now() - timedelta(hours=5)).replace(hour=0, minute=0, second=0, microsecond=0) - datetime(1970, 1, 1)).total_seconds())
 	return hashlib.sha256('{0}{1}{2}'.format(api_salt, t, url.decode('utf-8')).encode('utf-8')).hexdigest().encode('utf-8')
 
+
 def generateUrl(urlEnd):
 	return TelekomSportMainScreen.base_url + TelekomSportMainScreen.api_url + urlEnd + b'?token=' + generateToken(TelekomSportMainScreen.api_url + urlEnd)
+
 
 def readPasswords(session):
 	try:
@@ -115,6 +119,7 @@ def readPasswords(session):
 		session.open(MessageBox, 'Error reading passwords' + str(e), MessageBox.TYPE_ERROR)
 		print("Error reading MagentaSport.cfg", e)
 		return '', ''
+
 
 def savePasswords(session, p1, p2):
 	try:
@@ -128,6 +133,7 @@ def savePasswords(session, p1, p2):
 		print("Error writing MagentaSport.cfg", e)
 		return False
 
+
 def loadTelekomSportJsonData(screen, statusField, buildListFunc, data):
 	try:
 		jsonResult = json.loads(data)
@@ -140,14 +146,17 @@ def loadTelekomSportJsonData(screen, statusField, buildListFunc, data):
 	except Exception as e:
 		statusField.setText(screen + ': Fehler beim Laden der JSON Daten "' + str(e) + '"')
 
+
 def handleTelekomSportWebsiteResponse(callback, response):
 	d = readBody(response)
 	d.addCallback(callback)
 	return d
 
+
 def handleTelekomSportDownloadError(screen, statusField, err):
 	if statusField:
 		statusField.setText(screen + ': Fehler beim Download "' + str(err) + '"')
+
 
 def downloadTelekomSportJson(url, callback, errorCallback):
 	if telekomsport_isDreamOS == False:
@@ -164,7 +173,7 @@ def downloadTelekomSportJson(url, callback, errorCallback):
 				# Enable all workarounds to SSL bugs as documented by
 				# http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
 				ctx.set_options(SSL.OP_ALL)
-				if hostname and ClientTLSOptions is not None: # workaround for TLS SNI
+				if hostname and ClientTLSOptions is not None:  # workaround for TLS SNI
 					ClientTLSOptions(hostname, ctx)
 				return ctx
 
@@ -173,6 +182,7 @@ def downloadTelekomSportJson(url, callback, errorCallback):
 	d = agent.request(b'GET', url, Headers({'user-agent': ['Twisted']}))
 	d.addCallback(boundFunction(handleTelekomSportWebsiteResponse, callback))
 	d.addErrback(errorCallback)
+
 
 class TelekomSportRedirectHandler(HTTPRedirectHandler):
 
@@ -191,7 +201,7 @@ class TelekomSportRedirectHandler(HTTPRedirectHandler):
 class TelekomSportMainScreenSummary(SetupSummary):
 
 	def __init__(self, session, parent):
-		SetupSummary.__init__(self, session, parent = parent)
+		SetupSummary.__init__(self, session, parent=parent)
 		self.skinName = 'SetupSummary'
 		self.onShow.append(self.addWatcher)
 		self.onHide.append(self.removeWatcher)
@@ -306,9 +316,9 @@ class TelekomSportConfigScreen(ConfigListScreen, Screen):
 
 	def virtualKeyboard(self):
 		if self['config'].getCurrent() in (self.config_username1, self.config_username2, self.config_password1, self.config_password2):
-			self.session.openWithCallback(self.virtualKeyBoardCallback, VirtualKeyBoard, title = self['config'].getCurrent()[0], text = self['config'].getCurrent()[1].value)
+			self.session.openWithCallback(self.virtualKeyBoardCallback, VirtualKeyBoard, title=self['config'].getCurrent()[0], text=self['config'].getCurrent()[1].value)
 
-	def virtualKeyBoardCallback(self, callback = None):
+	def virtualKeyBoardCallback(self, callback=None):
 		if callback is not None:
 			self['config'].getCurrent()[1].value = callback
 			self['config'].invalidate(self['config'].getCurrent())
@@ -400,13 +410,13 @@ class TelekomSportMoviePlayer(Screen, InfoBarMenu, InfoBarBase, InfoBarSeek, Inf
 		self['actions'] = ActionMap(['MoviePlayerActions', 'ColorActions', 'OkCancelActions', 'SetupActions'],
 		{
 			'leavePlayer': self.leavePlayer,
-			'cancel'     : self.leavePlayer,
+			'cancel': self.leavePlayer,
 			'leavePlayerOnExit': self.leavePlayerOnExit,
-			'deleteBackward'   : self.showLastConfAlarm,
-			'red'   : self.showBoxScore,
-			'green' : self.showStatistics,
+			'deleteBackward': self.showLastConfAlarm,
+			'red': self.showBoxScore,
+			'green': self.showStatistics,
 			'yellow': self.showSchedule,
-			'blue'  : self.showStandings,
+			'blue': self.showStandings,
 		}, -2)
 		self.onFirstExecBegin.append(self.playStream)
 		self.onClose.append(self.stopPlayback)
@@ -475,7 +485,7 @@ class TelekomSportMoviePlayer(Screen, InfoBarMenu, InfoBarBase, InfoBarSeek, Inf
 	def showMovies(self):
 		pass
 
-	def checkAlarmHistory(self, showAll = False):
+	def checkAlarmHistory(self, showAll=False):
 		downloadTelekomSportJson(self.conference_alarm_url, boundFunction(loadTelekomSportJsonData, 'Player', None, boundFunction(self.checkForNewAlarm, showAll)), self.checkAlarmHistoryError)
 
 	def checkForNewAlarm(self, showAll, jsonData):
@@ -501,7 +511,7 @@ class TelekomSportMoviePlayer(Screen, InfoBarMenu, InfoBarBase, InfoBarSeek, Inf
 
 							complete_list.append((ev, match, title, text, eventid, videoid))
 
-							if (list(filter(lambda x: x[0] == ev, self.conference_complete_alarm_list)) == []) or showAll: # event not found in the current list or conference alarm enabled -> show all events
+							if (list(filter(lambda x: x[0] == ev, self.conference_complete_alarm_list)) == []) or showAll:  # event not found in the current list or conference alarm enabled -> show all events
 								new_alarms_list.append((ev, match, title, text, eventid, videoid))
 
 						self.conference_complete_alarm_list = complete_list
@@ -849,7 +859,7 @@ class TelekomSportStandingsScreen(Screen):
 				self.standingsList.append(('', '', '', '', '', '', '', '', '', 2, -1))
 				self.standingsList.append(('', '', '', '', '', '', '', '', '', 2, -2))
 				self.standingsList.append(('', 'Gruppe 2', '', '', '', '', '', '', '', 2, 0))
-			self.standingsList = sorted(self.standingsList, key = lambda entry: (entry[9], entry[10]))
+			self.standingsList = sorted(self.standingsList, key=lambda entry: (entry[9], entry[10]))
 			if not self.playoff_standings_url:
 				self.switchList()
 		except Exception as e:
@@ -964,7 +974,7 @@ class TelekomSportEventScreen(Screen):
 	def findXsrfTid(self, html):
 		pos = html.find('name="xsrf')
 		xsrf_name = html[pos + 6: pos + 33]
-		pos = html.find('value=',pos)
+		pos = html.find('value=', pos)
 		xsrf_value = html[pos + 7: pos + 29]
 		pos = html.find('name="tid" value="')
 		tid = html[pos + 18: pos + 54]
@@ -981,7 +991,7 @@ class TelekomSportEventScreen(Screen):
 		code_challenge = base64.urlsafe_b64encode(hashlib.sha256(code_verifier.encode('utf-8')).digest()).split('='.encode('utf-8'))[0]
 		state = ''.join(random.sample(string.ascii_letters + string.digits, 20))
 
-		data = { 'prompt': 'x-no-sso', 'nonce': nonce, 'response_type': 'code', 'scope': 'openid', 'code_challenge': code_challenge, 'code_challenge_method': 'S256', 'redirect_uri': 'sso.magentasport://web_login_callback', 'client_id': '10LIVESAM30000004901MAGENTASPORTIOS00000', 'state': state}
+		data = {'prompt': 'x-no-sso', 'nonce': nonce, 'response_type': 'code', 'scope': 'openid', 'code_challenge': code_challenge, 'code_challenge_method': 'S256', 'redirect_uri': 'sso.magentasport://web_login_callback', 'client_id': '10LIVESAM30000004901MAGENTASPORTIOS00000', 'state': state}
 
 		try:
 			response = urlopen(self.oauth_url + '?' + urlencode(data), None)
@@ -990,7 +1000,7 @@ class TelekomSportEventScreen(Screen):
 			xsrf_name, xsrf_value, tid = self.findXsrfTid(html)
 
 			# send username
-			data = { xsrf_name: xsrf_value, 'tid': tid, 'x-show-cancel': 'true', 'bdata': '' , 'pw_usr': username, 'pw_submit': '', 'hidden_pwd' :''}
+			data = {xsrf_name: xsrf_value, 'tid': tid, 'x-show-cancel': 'true', 'bdata': '', 'pw_usr': username, 'pw_submit': '', 'hidden_pwd': ''}
 			req = Request(self.oauth_factorx_url, urlencode(data).encode('utf8'))
 			req.add_header('Cookie', ';'.join(cookies))
 			response = urlopen(req)
@@ -999,27 +1009,27 @@ class TelekomSportEventScreen(Screen):
 			xsrf_name, xsrf_value, tid = self.findXsrfTid(html)
 
 			# send password
-			data = { xsrf_name: xsrf_value, 'tid': tid, 'bdata':'' , 'hidden_usr': username, 'pw_submit': '', 'pw_pwd': password }
+			data = {xsrf_name: xsrf_value, 'tid': tid, 'bdata': '', 'hidden_usr': username, 'pw_submit': '', 'pw_pwd': password}
 			# request is redirected which needs to be prevented
 			opener = build_opener(TelekomSportRedirectHandler(self)).open
 			req = Request(self.oauth_factorx_url, urlencode(data).encode('utf8'))
 			req.add_header('Cookie', ';'.join(cookies))
 			try:
 				response = opener(req)
-			except Exception as e: # ignore redirect error we need only auth_code which is set in the handler
+			except Exception as e:  # ignore redirect error we need only auth_code which is set in the handler
 				pass
 			if self.auth_code == '':
 				return 'Fehler beim Login ' + str(account) + '. Account. Kein auth code.'
 
 			# get auth code token
-			data = { 'code': self.auth_code, 'code_verifier': code_verifier, 'client_id': '10LIVESAM30000004901MAGENTASPORTIOS00000', 'grant_type': 'authorization_code' , 'redirect_uri': 'sso.magentasport://web_login_callback'}
+			data = {'code': self.auth_code, 'code_verifier': code_verifier, 'client_id': '10LIVESAM30000004901MAGENTASPORTIOS00000', 'grant_type': 'authorization_code', 'redirect_uri': 'sso.magentasport://web_login_callback'}
 			response = urlopen(Request(self.oauth_token_url, urlencode(data).encode('utf8')))
-			jsonData= json.loads(response.read())
+			jsonData = json.loads(response.read())
 
 			# get tsm token
-			data = { 'refresh_token': jsonData['refresh_token'], 'client_id': '10LIVESAM30000004901MAGENTASPORTIOS00000', 'grant_type':'refresh_token', 'redirect_uri': 'sso.magentasport://web_login_callback', 'scope':'tsm'}
+			data = {'refresh_token': jsonData['refresh_token'], 'client_id': '10LIVESAM30000004901MAGENTASPORTIOS00000', 'grant_type': 'refresh_token', 'redirect_uri': 'sso.magentasport://web_login_callback', 'scope': 'tsm'}
 			response = urlopen(Request(self.oauth_token_url, urlencode(data).encode('utf8')))
-			jsonData= json.loads(response.read())
+			jsonData = json.loads(response.read())
 			if 'access_token' not in jsonData:
 				if 'error_description' in jsonData:
 					return jsonData['error_description']
@@ -1097,20 +1107,20 @@ class TelekomSportEventScreen(Screen):
 					if lines[i].startswith('#EXT-X-STREAM-INF:'):
 						bandwith = self.readExtXStreamInfLine(lines[i], attributeListPattern)
 						if bandwith and i + 1 < count_lines:
-							if lines[i+1].strip().startswith('https'):
-								stream_url = lines[i+1].strip()
+							if lines[i + 1].strip().startswith('https'):
+								stream_url = lines[i + 1].strip()
 							else:
-								stream_url = m3u8_url.rsplit('/', 1)[0] + '/' + lines[i+1].strip()
+								stream_url = m3u8_url.rsplit('/', 1)[0] + '/' + lines[i + 1].strip()
 							streams.append((int(bandwith), stream_url))
 					i += 1
 				if streams:
-					streams.sort(key = lambda x: x[0])
+					streams.sort(key=lambda x: x[0])
 					if len(streams) != 5:
 						print('Warning: %d streams in m3u8. 5 expected' % len(streams))
 						if int(config.plugins.telekomsport.stream_quality.value) < 3:
 							return streams[0][1]
 						else:
-							return streams[len(streams)-1][1]
+							return streams[len(streams) - 1][1]
 					return streams[int(config.plugins.telekomsport.stream_quality.value)][1]
 			return ''
 		except:
@@ -1171,7 +1181,7 @@ class TelekomSportEventScreen(Screen):
 			if content['group_elements']:
 				for element in content['group_elements']:
 					if element['type'] in ('eventVideos', 'player'):
-						if element['type'] == 'eventVideos':	# remove all previous player videolist entries. This is needed for Bayern.TV
+						if element['type'] == 'eventVideos':  # remove all previous player videolist entries. This is needed for Bayern.TV
 							self.videoList = []
 						for videos in element['data']:
 							title = videos['title']
@@ -1398,7 +1408,7 @@ class TelekomSportSportsTypeScreen(Screen):
 
 	def update(self):
 		if self.telekomSportMainScreen.update_exist:
-			self.session.openWithCallback(self.telekomSportMainScreen.updateConfirmed, MessageBox, 'Ein Update ist verfügbar. Wollen sie es installieren?\nInformationen:\n' + self.telekomSportMainScreen.updateText, MessageBox.TYPE_YESNO, default = False)
+			self.session.openWithCallback(self.telekomSportMainScreen.updateConfirmed, MessageBox, 'Ein Update ist verfügbar. Wollen sie es installieren?\nInformationen:\n' + self.telekomSportMainScreen.updateText, MessageBox.TYPE_YESNO, default=False)
 
 	def closeRecursive(self):
 		self.close(True)
@@ -1422,7 +1432,7 @@ class TelekomSportSportsTypeScreen(Screen):
 							self.eventLaneList.append(('', subtitle, subtitle, urlpart, ''))
 						else:
 							self.eventLaneList.append(('Aktuelles', subtitle, 'Aktuelles', urlpart, ''))
-					if group_element['type'] == 'teaserGrid': # read epg data to get all matches
+					if group_element['type'] == 'teaserGrid':  # read epg data to get all matches
 						content_id = group_element['content_id']
 						self.eventLaneList.append(('Spielplan', '', 'Spielplan', '', ('/epg/content/' + str(content_id)).encode('utf8')))
 			if 'navigation' in jsonData['data'] and 'header' in jsonData['data']['navigation']:
@@ -1479,7 +1489,7 @@ class TelekomSportMainScreen(Screen):
 	main_page = b'/navigation'
 	title = 'Magenta Sport'
 
-	def __init__(self, session, args = None):
+	def __init__(self, session, args=None):
 		Screen.__init__(self, session)
 		self.session = session
 
@@ -1580,7 +1590,7 @@ class TelekomSportMainScreen(Screen):
 	# for update
 	def checkForUpdate(self):
 		url = 'https://api.github.com/repos/E2OpenPlugins/e2openplugin-TelekomSport/releases'
-		header = { 'Accept' : 'application/vnd.github.v3+json' }
+		header = {'Accept': 'application/vnd.github.v3+json'}
 		req = Request(url, None, header)
 		self.update_exist = False
 		try:
@@ -1613,7 +1623,7 @@ class TelekomSportMainScreen(Screen):
 
 	def update(self):
 		if self.updateUrl:
-			self.session.openWithCallback(self.updateConfirmed, MessageBox, 'Ein Update ist verfügbar. Wollen sie es installieren?\nInformationen:\n' + self.updateText, MessageBox.TYPE_YESNO, default = False)
+			self.session.openWithCallback(self.updateConfirmed, MessageBox, 'Ein Update ist verfügbar. Wollen sie es installieren?\nInformationen:\n' + self.updateText, MessageBox.TYPE_YESNO, default=False)
 
 	def updateConfirmed(self, answer):
 		if answer:
@@ -1636,7 +1646,7 @@ class TelekomSportMainScreen(Screen):
 		self['buttongreen'].hide()
 		self.updateUrl = ''
 		if retval == 0:
-			self.session.openWithCallback(self.restartE2, MessageBox, 'Das Magenta Sport Plugin wurde erfolgreich installiert!\nSoll das E2 GUI neugestartet werden?', MessageBox.TYPE_YESNO, default = False)
+			self.session.openWithCallback(self.restartE2, MessageBox, 'Das Magenta Sport Plugin wurde erfolgreich installiert!\nSoll das E2 GUI neugestartet werden?', MessageBox.TYPE_YESNO, default=False)
 		else:
 			self.session.open(MessageBox, 'Bei der Installation ist ein Problem aufgetreten.', MessageBox.TYPE_ERROR)
 
@@ -1659,5 +1669,6 @@ class TelekomSportMainScreen(Screen):
 def main(session, **kwargs):
 	session.open(TelekomSportMainScreen)
 
+
 def Plugins(**kwargs):
-	return PluginDescriptor(name='Magenta Sport', description=_('Magenta Sport Plugin'), where = PluginDescriptor.WHERE_PLUGINMENU, icon='plugin.png', fnc=main)
+	return PluginDescriptor(name='Magenta Sport', description=_('Magenta Sport Plugin'), where=PluginDescriptor.WHERE_PLUGINMENU, icon='plugin.png', fnc=main)

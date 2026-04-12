@@ -29,6 +29,7 @@ try:
 except:
 	pass
 
+
 class TelekomSportFileSaver(Protocol):
 
 	def __init__(self, finished, callback, errorCallback, filename):
@@ -66,7 +67,7 @@ class TelekomSportFileDownloader:
 					# Enable all workarounds to SSL bugs as documented by
 					# http://www.openssl.org/docs/ssl/SSL_CTX_set_options.html
 					ctx.set_options(SSL.OP_ALL)
-					if hostname and ClientTLSOptions is not None: # workaround for TLS SNI
+					if hostname and ClientTLSOptions is not None:  # workaround for TLS SNI
 						ClientTLSOptions(hostname, ctx)
 					return ctx
 
