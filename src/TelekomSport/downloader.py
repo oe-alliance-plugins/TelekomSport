@@ -1,6 +1,6 @@
 from Tools.BoundFunction import boundFunction
 
-from twisted.web.client import Agent, BrowserLikeRedirectAgent, readBody, ResponseDone
+from twisted.web.client import Agent, BrowserLikeRedirectAgent, ResponseDone
 from twisted.internet.defer import Deferred
 from twisted.internet.protocol import Protocol
 from twisted.internet import reactor
@@ -17,7 +17,7 @@ except ImportError:
 #================================================
 
 try:
-	from enigma import eMediaDatabase
+	from enigma import eMediaDatabase  # noqa F401
 
 	import ssl
 	try:
@@ -26,7 +26,7 @@ try:
 		pass
 	else:
 		ssl._create_default_https_context = _create_unverified_https_context
-except:
+except Exception:
 	pass
 
 
@@ -53,7 +53,7 @@ class TelekomSportFileSaver(Protocol):
 class TelekomSportFileDownloader:
 
 	def __init__(self, isDreamOS):
-		if isDreamOS == False:
+		if isDreamOS is False:
 			self.agent = BrowserLikeRedirectAgent(Agent(reactor))
 		else:
 			class WebClientContextFactory(ClientContextFactory):

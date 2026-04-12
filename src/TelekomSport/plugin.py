@@ -11,7 +11,6 @@ from Components.ActionMap import ActionMap
 from Components.ServiceEventTracker import InfoBarBase
 from Components.Sources.List import List
 from Components.Label import Label
-from Components.MultiContent import MultiContentEntryText, MultiContentEntryProgress
 from Components.Pixmap import Pixmap
 from Components.ConfigList import ConfigListScreen
 from Components.config import config, getConfigListEntry, ConfigSubsection, ConfigText, ConfigPassword, ConfigInteger, ConfigNothing, ConfigYesNo, ConfigSelection, NoSave
@@ -19,7 +18,7 @@ from Tools.BoundFunction import boundFunction
 from Tools.Directories import resolveFilename, SCOPE_PLUGINS
 from .downloader import TelekomSportFileDownloader
 
-from enigma import eTimer, eListboxPythonMultiContent, gFont, eEnv, eServiceReference, getDesktop, eConsoleAppContainer
+from enigma import eTimer, eEnv, eServiceReference, getDesktop, eConsoleAppContainer
 
 import xml.etree.ElementTree as ET
 import time
@@ -48,7 +47,7 @@ else:
 	loadSkin(resolveFilename(SCOPE_PLUGINS) + "Extensions/TelekomSport/skin_fhd.xml")
 
 try:
-	from enigma import eMediaDatabase
+	from enigma import eMediaDatabase  # noqa F401
 	telekomsport_isDreamOS = True
 
 	import ssl
@@ -59,7 +58,7 @@ try:
 	else:
 		ssl._create_default_https_context = _create_unverified_https_context
 
-except:
+except Exception:
 	telekomsport_isDreamOS = False
 
 #==== workaround for TLSv1_2 with DreamOS =======
@@ -159,7 +158,7 @@ def handleTelekomSportDownloadError(screen, statusField, err):
 
 
 def downloadTelekomSportJson(url, callback, errorCallback):
-	if telekomsport_isDreamOS == False:
+	if not telekomsport_isDreamOS:
 		agent = Agent(reactor)
 	else:
 		class WebClientContextFactory(ClientContextFactory):
@@ -871,7 +870,7 @@ class TelekomSportStandingsScreen(Screen):
 			if 'title' in jsonData['data']:
 				title = jsonData['data']['title']
 			else:
-				title = ''
+				title = ''  # noqa F841
 			for round in jsonData['data']['rounds']:
 				subtitle = round['title']
 				for enc in round['encounters']:
@@ -903,7 +902,7 @@ class TelekomSportStandingsScreen(Screen):
 						self.normal_standings_url = g['data']['urls']['standings_url'].encode('utf8')
 					elif g['type'] == 'playoffTree':
 						self.playoff_standings_url = g['data']['url'].encode('utf8')
-		except Exception as e:
+		except Exception:
 			self['status'].setText('Aktuell steht die Tabelle nicht zur Verfügung. Bitte versuchen sie es später noch einmal.')
 			return
 
@@ -981,7 +980,7 @@ class TelekomSportEventScreen(Screen):
 		return xsrf_name, xsrf_value, tid
 
 	def login(self, account, username, password, config_token, config_token_expiration_time):
-		err = ''
+		# err = ''
 		# check if token is present and valid
 		if config_token.value and config_token_expiration_time.value > int(time.time()):
 			return ''
@@ -1016,7 +1015,7 @@ class TelekomSportEventScreen(Screen):
 			req.add_header('Cookie', ';'.join(cookies))
 			try:
 				response = opener(req)
-			except Exception as e:  # ignore redirect error we need only auth_code which is set in the handler
+			except Exception:  # ignore redirect error we need only auth_code which is set in the handler
 				pass
 			if self.auth_code == '':
 				return 'Fehler beim Login ' + str(account) + '. Account. Kein auth code.'
@@ -1123,7 +1122,7 @@ class TelekomSportEventScreen(Screen):
 							return streams[len(streams) - 1][1]
 					return streams[int(config.plugins.telekomsport.stream_quality.value)][1]
 			return ''
-		except:
+		except Exception:
 			return ''
 
 	def playVideo(self, videoid, pay, title):
@@ -1196,7 +1195,7 @@ class TelekomSportEventScreen(Screen):
 	def buildLiveEventScreen(self, jsonData):
 		self['subdescription'].setText('Übertragung vom ' + self.starttime.strftime('%d.%m.%Y %H:%M') + '\n\nVideos:')
 		if 'has_alerts' in jsonData['data']['metadata']['event_metadata']:
-			self.conference_alarm_available = jsonData['data']['metadata']['event_metadata']['has_alerts'] == True
+			self.conference_alarm_available = jsonData['data']['metadata']['event_metadata']['has_alerts'] is True
 			if self.conference_alarm_available:
 				self['confalarm'].setText('Konferenzalarm ist verfügbar. Bitte Info/EPG Taste drücken um ihn zu aktivieren.')
 		if 'league_id' in jsonData['data']['metadata']['event_metadata']:
@@ -1393,7 +1392,7 @@ class TelekomSportSportsTypeScreen(Screen):
 		self['buttonblue'] = Label('')
 		self['buttonblue'].hide()
 		self['buttongreen'] = Label('Update')
-		if self.telekomSportMainScreen.update_exist == False:
+		if self.telekomSportMainScreen.update_exist is False:
 			self['buttongreen'].hide()
 
 		self['actions'] = ActionMap(['MenuActions', 'SetupActions', 'DirectionActions', 'ColorActions'],
@@ -1618,7 +1617,7 @@ class TelekomSportMainScreen(Screen):
 				if self.version >= rel['tag_name'] or self.updateUrl != '':
 					break
 
-		except Exception as e:
+		except Exception:
 			pass
 
 	def update(self):
